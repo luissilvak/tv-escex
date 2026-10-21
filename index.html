@@ -30,7 +30,7 @@ video { object-fit: contain; }
 .linha div { width: 0; height: 100%; background: var(--ceu); }
 .vinheta.rodando .linha div { animation: encher 3.2s linear forwards; }
 @keyframes encher { to { width: 100%; } }
-.texto { max-width: 60vw; font-size: 1.8vw; line-height: 1.4; color: var(--nevoa); }
+.texto { max-width: 64vw; font-size: 1.8vw; line-height: 1.4; color: var(--nevoa); white-space: pre-line; }
 .assinatura { position: absolute; right: 4vw; bottom: 3.4vw; display: flex; align-items: center; gap: 2.4vw; }
 .assinatura img { display: block; height: max(40px, 4vw); width: auto; }
 .assinatura span { width: 1px; height: 3.2vw; background: rgba(255, 255, 255, .28); }
@@ -2453,6 +2453,18 @@ var qrcode = function() {
       return encodeURIComponent(k) + '=' + encodeURIComponent(dados[k]);
     }).join('&');
   }
+  // Traduz a falha de conexão em algo que dá para resolver olhando a tela da TV.
+  function explicarErro(e) {
+    var msg = (e && e.message) || String(e);
+    if (e && e.name === 'TypeError') return 'Não foi possível falar com a API. Confira se a implantação “API da TV” executa como “Eu” e tem acesso “Qualquer pessoa”, e se o aparelho está com internet.';
+    if (e && e.name === 'SyntaxError') return 'A API respondeu com uma página em vez de dados. Confira se o endereço usado é o da implantação “API da TV”.';
+    if (/Chave da TV inválida/.test(msg)) return 'A chave deste link não confere com a do sistema. Abra de novo o Link da TV copiado da Administração.';
+    return msg;
+  }
+  function resumoApi() {
+    var m = String(conf.api).match(/\/s\/([^/]+)\/exec/);
+    return m ? 'implantação ' + m[1].slice(0, 8) + '…' + m[1].slice(-6) : conf.api;
+  }
   function porId(id) {
     for (var i = 0; i < prog.videos.length; i++) if (prog.videos[i].id === id) return prog.videos[i];
     return null;
@@ -2505,7 +2517,7 @@ var qrcode = function() {
         retomar();
       })
       .catch(function (e) {
-        tv.erroProgramacao = 'Sem acesso à programação (' + e.message + ').';
+        tv.erroProgramacao = explicarErro(e);
         retomar();
       });
   }
@@ -2531,7 +2543,7 @@ var qrcode = function() {
         tv.atualId = null;
         if (!prog.videos.length && tv.erroProgramacao) {
           tv.fase = 'semprog';
-          mostrarAviso('Sem conexão com a programação', 'A TV tenta de novo sozinha em instantes.');
+          mostrarAviso('Sem conexão com a programação', tv.erroProgramacao + '\nEndereço usado: ' + resumoApi() + '.\nA TV tenta de novo a cada 20 segundos.');
         } else {
           tv.fase = 'vazio';
           mostrarAviso('Nenhum vídeo na programação', 'Marque “Na TV” em algum vídeo na tela administrativa.');
@@ -2819,6 +2831,7 @@ var qrcode = function() {
   // ---------- comunicação com a administração ----------
   function batida() {
     if (!conf.api || !conf.chave) return;
+    if (tv.fase === 'semprog') carregarProgramacao();
     var avisos = [];
     if (tv.avisoSom) avisos.push('O navegador bloqueou o som, e a TV está no mudo.');
     if (baixa.semEspaco) avisos.push('Falta espaço para guardar todos os vídeos; alguns tocam direto da internet.');
