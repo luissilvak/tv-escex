@@ -17,48 +17,90 @@
 html, body { height: 100%; margin: 0; overflow: hidden; background: #000; }
 body { color: var(--tinta); font-family: var(--f-texto); cursor: none; }
 video, iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
-video { object-fit: contain; }
+video { object-fit: contain; opacity: 0; transition: opacity .8s ease; }
+video.visivel { opacity: 1; }
 .camada { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 8vw; background: var(--noite); transition: opacity .6s ease, visibility 0s linear 0s; }
 .oculta { opacity: 0; visibility: hidden; transition: opacity .6s ease, visibility 0s linear .6s; }
 .rotulo { font-size: 1.8vw; font-weight: 600; color: var(--ceu); }
-.titulo { max-width: 80vw; margin: 1.2vw 0 1.4vw; font-family: var(--f-titulo); font-weight: 800; font-stretch: 85%; line-height: 1.04; text-wrap: balance; }
-.vinheta .titulo { opacity: 0; transform: translateY(1.2vw); transition: opacity .6s ease .2s, transform .6s ease .2s; }
-.vinheta.rodando .titulo { opacity: 1; transform: none; }
+/* luz de fundo da Aurora: duas manchas de luz nas cores da ESCEX, em deriva lenta */
+.aurora { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.aurora::before, .aurora::after { content: ""; position: absolute; border-radius: 50%; will-change: transform; }
+.aurora::before { width: 70vw; height: 70vw; left: -12vw; top: -28vw; background: radial-gradient(circle, rgba(31, 95, 174, .42), rgba(31, 95, 174, 0) 66%); animation: deriva-a 26s ease-in-out infinite alternate; }
+.aurora::after { width: 56vw; height: 56vw; right: -14vw; bottom: -26vw; background: radial-gradient(circle, rgba(216, 35, 42, .16), rgba(216, 35, 42, 0) 66%); animation: deriva-b 32s ease-in-out infinite alternate; }
+@keyframes deriva-a { to { transform: translate(16vw, 9vw) scale(1.12); } }
+@keyframes deriva-b { to { transform: translate(-12vw, -8vw) scale(1.08); } }
+/* vinheta */
+.vin-fundo { position: absolute; top: -4vw; left: -4vw; width: calc(100% + 8vw); height: calc(100% + 8vw); object-fit: cover; filter: blur(1.4vw) saturate(1.15) brightness(.5); opacity: 0; transition: opacity 1s ease; }
+.vin-fundo.pronta { opacity: .6; }
+.vin-hora { position: absolute; top: 3.4vw; right: 4vw; z-index: 1; font: 600 1.6vw/1 var(--f-titulo); font-variant-numeric: tabular-nums; color: var(--nevoa); }
+.vin-rotulo { position: relative; z-index: 1; display: flex; align-items: center; gap: 1.2vw; font-size: 1.7vw; font-weight: 600; color: var(--ceu); }
+.vin-traco { display: block; width: 0; height: .25vw; border-radius: 1vw; background: var(--ceu); transition: width .7s cubic-bezier(.2, .7, .1, 1) .1s; }
+.vinheta.rodando .vin-traco { width: 5vw; }
+.vin-meta { position: relative; z-index: 1; display: flex; align-items: center; font-size: 1.7vw; color: var(--nevoa); opacity: 0; transition: opacity .6s ease .65s; }
+.vin-meta span:empty { display: none; }
+.vin-meta span + span:not(:empty)::before { content: ""; display: inline-block; width: 1px; height: 1.5vw; margin: 0 1.3vw; vertical-align: -.2vw; background: rgba(255, 255, 255, .3); }
+.vinheta.rodando .vin-meta { opacity: 1; }
+/* faixa "Agora" no começo de cada vídeo, no alto, longe das legendas */
+.faixa-agora { position: fixed; top: 4.5vh; left: 3.2vw; z-index: 2; display: grid; gap: .35vw; max-width: 44vw; padding: 1.1vw 1.6vw 1.2vw; border: 1px solid rgba(255, 255, 255, .14); border-radius: .9vw; background: rgba(5, 13, 28, .6); -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3); opacity: 0; transform: translateY(-.8vw); transition: opacity .6s ease, transform .6s cubic-bezier(.2, .7, .1, 1); pointer-events: none; }
+.faixa-agora.ativa { opacity: 1; transform: none; }
+.fa-rotulo { display: flex; align-items: center; gap: .6vw; font-size: 1vw; font-weight: 600; color: var(--ceu); }
+.fa-rotulo::before { content: ""; width: .6vw; height: .6vw; border-radius: 50%; background: var(--ceu); }
+.fa-titulo { font: 700 1.75vw/1.15 var(--f-titulo); font-stretch: 90%; color: var(--tinta); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.fa-serie { font-size: 1.1vw; color: var(--nevoa); }
+.fa-serie:empty { display: none; }
+/* aviso discreto quando o navegador bloqueia o som que a administração pediu */
+.aviso-som { position: fixed; left: 3.2vw; bottom: 4.5vh; z-index: 3; display: flex; align-items: center; gap: .9vw; max-width: 40vw; padding: .9vw 1.4vw; border: 1px solid rgba(255, 255, 255, .14); border-radius: 1vw; background: rgba(5, 13, 28, .7); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); font-size: 1.15vw; line-height: 1.35; color: var(--tinta); opacity: 0; transform: translateY(.8vw); transition: opacity .5s ease, transform .5s ease; pointer-events: none; }
+.aviso-som.ativo { opacity: 1; transform: none; }
+.aviso-som svg { flex: none; width: 1.8vw; height: 1.8vw; fill: none; stroke: var(--ceu); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.titulo { position: relative; z-index: 1; max-width: 80vw; margin: 1.2vw 0 1.4vw; font-family: var(--f-titulo); font-weight: 800; font-stretch: 85%; line-height: 1.04; letter-spacing: -.01em; text-wrap: balance; }
+.vinheta .titulo { clip-path: inset(-10% -10% 100% -10%); transform: translateY(2.2vw); transition: clip-path .85s cubic-bezier(.2, .7, .1, 1) .25s, transform .85s cubic-bezier(.2, .7, .1, 1) .25s; }
+.vinheta.rodando .titulo { clip-path: inset(-10% -10% -15% -10%); transform: none; }
 .t-g { font-size: 6.2vw; } .t-m { font-size: 4.7vw; } .t-p { font-size: 3.7vw; }
 .serie { font-size: 1.7vw; color: var(--nevoa); }
 .linha { width: 26vw; height: .4vw; margin-top: 3vw; background: rgba(255, 255, 255, .12); border-radius: 1vw; overflow: hidden; }
 .linha div { width: 0; height: 100%; background: var(--ceu); }
 .vinheta.rodando .linha div { animation: encher 3.2s linear forwards; }
 @keyframes encher { to { width: 100%; } }
-.texto { max-width: 64vw; font-size: 1.8vw; line-height: 1.4; color: var(--nevoa); white-space: pre-line; }
-.assinatura { position: absolute; right: 4vw; bottom: 3.4vw; display: flex; align-items: center; gap: 2.4vw; }
+.texto { position: relative; z-index: 1; max-width: 64vw; font-size: 1.8vw; line-height: 1.4; color: var(--nevoa); white-space: pre-line; }
+.assinatura { position: absolute; z-index: 1; right: 4vw; bottom: 3.4vw; display: flex; align-items: center; gap: 2.4vw; }
 .assinatura img { display: block; height: max(40px, 4vw); width: auto; }
 .assinatura span { width: 1px; height: 3.2vw; background: rgba(255, 255, 255, .28); }
 .noticia { display: block; padding: 0; overflow: hidden; }
-.not-foto { position: absolute; top: 0; bottom: 0; left: 0; width: 56%; background: #000; }
+.not-foto { position: absolute; z-index: 1; top: 0; bottom: 0; left: 0; width: 56%; overflow: hidden; background: #000; }
 .not-foto img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .not-foto.conter img { object-fit: contain; }
-.not-painel { position: absolute; top: 0; bottom: 0; right: 0; width: 44%; display: flex; flex-direction: column; gap: 1.3vw; padding: 3.6vw 3.6vw 3vw; }
+.not-painel { position: absolute; z-index: 1; top: 0; bottom: 0; right: 0; width: 44%; display: flex; flex-direction: column; gap: 1.3vw; padding: 3.6vw 3.6vw 3vw; }
 .not-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4vw 1.2vw; font-size: 1.25vw; }
 .not-rotulo { font-weight: 600; color: var(--ceu); }
-.not-fonte { font-weight: 700; }
+.not-fonte { padding: .2vw .8vw; border: 1px solid rgba(141, 184, 240, .45); border-radius: 99vw; font-weight: 700; }
 .not-data { color: var(--nevoa); }
 .not-titulo { font-family: var(--f-titulo); font-weight: 800; font-stretch: 88%; line-height: 1.06; text-wrap: balance; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 .n-g { font-size: 3.6vw; } .n-m { font-size: 3vw; } .n-p { font-size: 2.5vw; }
 .not-resumo { margin: 0; font-size: 1.5vw; line-height: 1.4; color: var(--nevoa); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-.not-titulo, .not-resumo { transition: opacity .5s ease .1s, transform .5s ease .1s; }
-.noticia:not(.rodando) .not-titulo, .noticia:not(.rodando) .not-resumo { opacity: 0; transform: translateY(1vw); }
+.not-resumo { transition: opacity .6s ease .45s, transform .6s ease .45s; }
+.not-titulo { transition: clip-path .8s cubic-bezier(.2, .7, .1, 1) .15s, transform .8s cubic-bezier(.2, .7, .1, 1) .15s; }
+.noticia:not(.rodando) .not-resumo { opacity: 0; transform: translateY(1vw); }
+.noticia:not(.rodando) .not-titulo { clip-path: inset(-10% -10% 100% -10%); transform: translateY(1.6vw); }
+.noticia.rodando .not-titulo { clip-path: inset(-10% -10% -15% -10%); }
+.noticia.rodando .not-foto:not(.conter) img { animation: aproximar var(--seg, 12s) ease-out forwards; }
+@keyframes aproximar { from { transform: scale(1.02); } to { transform: scale(1.09); } }
+.not-segmentos { display: flex; gap: .5vw; margin-bottom: .4vw; }
+.not-segmentos span { flex: 1; height: .3vw; overflow: hidden; border-radius: 1vw; background: rgba(255, 255, 255, .18); }
+.not-segmentos span::after { content: ""; display: block; width: 0; height: 100%; background: var(--ceu); }
+.not-segmentos span.cheio::after { width: 100%; }
+.noticia.rodando .not-segmentos span.atual::after { animation: encher var(--seg, 12s) linear forwards; }
 .not-qr-linha { margin-top: auto; display: flex; align-items: center; gap: 1.4vw; }
-.not-qr { flex: none; width: 8vw; padding: .5vw; background: #fff; border-radius: .5vw; line-height: 0; }
+.not-qr { flex: none; width: 8vw; padding: .6vw; background: #fff; border-radius: .8vw; line-height: 0; }
 .not-qr svg { display: block; width: 100%; height: auto; }
 .not-qr-linha span { font-size: 1.15vw; line-height: 1.35; color: var(--nevoa); }
+.not-qr-linha strong { display: block; font-size: 1.3vw; font-weight: 700; color: var(--tinta); }
 .noticia.sem-link .not-qr-linha { display: none; }
-.not-tempo { position: absolute; left: 0; right: 0; bottom: 0; height: .4vw; background: rgba(255, 255, 255, .12); }
+.not-tempo { display: none; }
 .not-tempo div { width: 0; height: 100%; background: var(--ceu); }
 .noticia.rodando .not-tempo div { animation: encher var(--seg, 12s) linear forwards; }
 .not-assinatura { display: none; }
 .layout-manchete .not-foto { width: 100%; }
-.layout-manchete .not-painel { top: auto; left: 0; width: auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "meta qr" "titulo qr" "resumo qr"; gap: .8vw 3vw; padding: 2.4vw 4vw 2.8vw; background: rgba(5, 13, 28, .9); }
+.layout-manchete .not-painel { top: auto; left: 0; width: auto; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "meta qr" "titulo qr" "resumo qr"; gap: .8vw 3vw; padding: 2.4vw 4vw 2.8vw; background: rgba(5, 13, 28, .62); -webkit-backdrop-filter: blur(16px) saturate(1.2); backdrop-filter: blur(16px) saturate(1.2); border-top: 1px solid rgba(255, 255, 255, .12); }
 .layout-manchete .not-meta { grid-area: meta; }
 .layout-manchete .not-titulo { grid-area: titulo; -webkit-line-clamp: 2; }
 .layout-manchete .not-resumo { grid-area: resumo; -webkit-line-clamp: 2; }
@@ -75,7 +117,9 @@ video { object-fit: contain; }
 .not-assinatura img { display: block; height: max(40px, 4vw); width: auto; }
 .not-assinatura span { width: 1px; height: 3.2vw; background: rgba(255, 255, 255, .28); }
 @media (prefers-reduced-motion: reduce) {
-  .camada, .oculta, .vinheta .titulo { transition: none; }
+  .camada, .oculta, .vinheta .titulo, .not-titulo, .vin-traco, .vin-meta, .faixa-agora, video { transition: none !important; }
+  .aurora::before, .aurora::after, .noticia.rodando .not-foto img { animation: none !important; }
+  .vinheta .titulo, .not-titulo { clip-path: none !important; transform: none !important; }
   .vinheta.rodando .linha div { animation: none; width: 100%; }
   .not-titulo, .not-resumo { transition: none; }
   .noticia.rodando .not-tempo div { animation: none; width: 100%; }
@@ -84,29 +128,37 @@ video { object-fit: contain; }
 </head>
 <body>
 <video id="video" playsinline preload="auto" muted></video>
+<div class="aviso-som" id="aviso-som" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg><span>Som bloqueado pelo navegador. Clique na tela ou aperte OK no controle para ativar.</span></div>
+<div class="faixa-agora" id="faixa-agora" aria-hidden="true"><span class="fa-rotulo">Agora</span><span class="fa-titulo" id="fa-titulo"></span><span class="fa-serie" id="fa-serie"></span></div>
 <iframe id="agenda" class="oculta" title="Agenda da secretaria" src="about:blank"></iframe>
 
 <div class="camada vinheta oculta" id="vinheta">
-  <div class="rotulo">A seguir</div>
+  <img class="vin-fundo" id="vin-fundo" alt="">
+  <div class="aurora" aria-hidden="true"></div>
+  <div class="vin-hora" id="vin-hora"></div>
+  <div class="vin-rotulo"><span class="vin-traco"></span>A seguir</div>
   <div class="titulo t-m" id="vin-titulo"></div>
-  <div class="serie" id="vin-serie"></div>
+  <div class="vin-meta"><span id="vin-serie"></span><span id="vin-dur"></span></div>
   <div class="linha"><div></div></div>
   <div class="assinatura"><img data-marca="logoEscuro" alt="ESCEX"><span></span><img data-marca="brasaoEscuro" alt="Tribunal de Contas do Estado do Maranhão"></div>
 </div>
 
 <div class="camada noticia layout-jornal oculta" id="noticia">
+  <div class="aurora" aria-hidden="true"></div>
   <div class="not-foto"><img alt=""></div>
   <div class="not-painel">
+    <div class="not-segmentos" aria-hidden="true"></div>
     <div class="not-meta"><span class="not-rotulo"></span><span class="not-fonte"></span><span class="not-data"></span></div>
     <div class="not-titulo n-m"></div>
     <p class="not-resumo"></p>
-    <div class="not-qr-linha"><div class="not-qr" aria-hidden="true"></div><span>Aponte a câmera do celular para ler a notícia completa</span></div>
+    <div class="not-qr-linha"><div class="not-qr" aria-hidden="true"></div><span><strong>Leia no celular</strong>Aponte a câmera para o código</span></div>
   </div>
   <div class="not-assinatura"><img data-marca="logoEscuro" alt="ESCEX"><span></span><img data-marca="brasaoEscuro" alt="Tribunal de Contas do Estado do Maranhão"></div>
   <div class="not-tempo"><div></div></div>
 </div>
 
 <div class="camada" id="aviso">
+  <div class="aurora" aria-hidden="true"></div>
   <div class="titulo t-m" id="aviso-titulo">Preparando a programação</div>
   <div class="texto" id="aviso-texto"></div>
   <div class="assinatura"><img data-marca="logoEscuro" alt="ESCEX"><span></span><img data-marca="brasaoEscuro" alt="Tribunal de Contas do Estado do Maranhão"></div>
@@ -2422,7 +2474,7 @@ var qrcode = function() {
   var CACHE = 'tv-escex-videos-v1';
 
   var $ = function (s) { return document.querySelector(s); };
-  var video = $('#video'), agenda = $('#agenda'), vinheta = $('#vinheta'), aviso = $('#aviso'), noticiaEl = $('#noticia');
+  var video = $('#video'), agenda = $('#agenda'), vinheta = $('#vinheta'), aviso = $('#aviso'), noticiaEl = $('#noticia'), faixaAgora = $('#faixa-agora');
 
   var marcas = JSON.parse($('#marcas').textContent);
   Array.prototype.forEach.call(document.querySelectorAll('img[data-marca]'), function (img) {
@@ -2443,8 +2495,8 @@ var qrcode = function() {
     if (salvo && salvo.videos) prog = salvo;
   } catch (e) { /* ignora programação guardada com defeito */ }
 
-  var tv = { fase: 'carregando', atualId: null, timer: null, objUrl: null, origem: '', falhas: {}, forcado: false, avisoSom: false, ultimoTempo: -1, ultimoAvanco: Date.now(), erroProgramacao: '' };
-  var baixa = { prontos: {}, erros: {}, atual: null, pct: 0, ocupado: false, semEspaco: false };
+  var tv = { fase: 'carregando', atualId: null, timer: null, objUrl: null, origem: '', falhas: {}, motivos: {}, forcado: false, avisoSom: false, ultimoTempo: -1, ultimoAvanco: Date.now(), erroProgramacao: '' };
+  var baixa = { prontos: {}, erros: {}, motivos: {}, atual: null, pct: 0, ocupado: false, semEspaco: false };
   var inicio = Date.now();
 
   function endereco(dados) {
@@ -2490,6 +2542,8 @@ var qrcode = function() {
     if (tv.objUrl) { URL.revokeObjectURL(tv.objUrl); tv.objUrl = null; }
   }
   function pararVideo() {
+    video.classList.remove('visivel');
+    esconderFaixaAgora();
     video.pause();
     video.removeAttribute('src');
     video.load();
@@ -2523,7 +2577,7 @@ var qrcode = function() {
   }
 
   function retomar() {
-    if (['carregando', 'vazio', 'config', 'semprog', 'semchave'].indexOf(tv.fase) >= 0) proximo();
+    if (['carregando', 'vazio', 'config', 'semprog', 'semchave', 'falhas'].indexOf(tv.fase) >= 0) proximo();
   }
 
   function agendaLigada() {
@@ -2541,7 +2595,14 @@ var qrcode = function() {
       if (!lista.length) {
         pararVideo();
         tv.atualId = null;
-        if (!prog.videos.length && tv.erroProgramacao) {
+        var marcados = prog.videos.filter(function (v) { return v.ativo !== false; });
+        if (marcados.length) {
+          // há vídeos marcados, mas nenhum conseguiu tocar: enquanto isso, a TV mostra as notícias
+          tv.fase = 'falhas';
+          var reserva = dentroDoHorario() ? proximasNoticias(1) : [];
+          if (reserva.length) { mostrarNoticias(reserva, function () { proximo(); }); return; }
+          mostrarAviso('Os vídeos não conseguiram tocar', 'A TV tenta de novo sozinha. O motivo aparece na tela administrativa.');
+        } else if (!prog.videos.length && tv.erroProgramacao) {
           tv.fase = 'semprog';
           mostrarAviso('Sem conexão com a programação', tv.erroProgramacao + '\nEndereço usado: ' + resumoApi() + '.\nA TV tenta de novo a cada 20 segundos.');
         } else {
@@ -2593,6 +2654,11 @@ var qrcode = function() {
     t.textContent = item.titulo;
     t.className = 'titulo ' + classeTitulo(item.titulo);
     $('#vin-serie').textContent = item.serie || '';
+    $('#vin-dur').textContent = duracaoTexto(item.duracao);
+    fundoVinheta(item);
+    relogioTV();
+    esconderFaixaAgora();
+    video.classList.remove('visivel');
     vinheta.classList.remove('rodando');
     void vinheta.offsetWidth;
     vinheta.classList.add('rodando');
@@ -2614,6 +2680,7 @@ var qrcode = function() {
 
   function tocar(item, fonteP) {
     tv.fase = 'video';
+    tv.faixaMostrada = null;
     tv.atualId = item.id;
     tv.ultimoTempo = -1;
     tv.ultimoAvanco = Date.now();
@@ -2639,6 +2706,7 @@ var qrcode = function() {
           tv.avisoSom = true;
           video.muted = true;
           video.play().catch(function () {});
+          mostrarAvisoSom();
         }
       });
     }
@@ -2660,7 +2728,7 @@ var qrcode = function() {
       return;
     }
     tv.falhas[item.id] = Date.now();
-    tv.motivo = motivo;
+    tv.motivos[item.id] = baixa.motivos[item.id] || ('o aparelho não reproduziu (' + motivo + ')');
     batida();
     proximo();
   }
@@ -2671,7 +2739,16 @@ var qrcode = function() {
     if (lote.length) mostrarNoticias(lote, function () { proximo(); });
     else proximo();
   });
-  video.addEventListener('playing', function () { if (tv.fase === 'video') esconder(vinheta); });
+  video.addEventListener('playing', function () {
+    if (tv.fase !== 'video') return;
+    video.classList.add('visivel');
+    esconder(vinheta);
+    if (tv.faixaMostrada !== tv.atualId) {
+      tv.faixaMostrada = tv.atualId;
+      mostrarFaixaAgora(porId(tv.atualId));
+    }
+  });
+  video.addEventListener('loadeddata', function () { if (tv.fase === 'video') video.classList.add('visivel'); });
   video.addEventListener('timeupdate', function () {
     if (video.currentTime !== tv.ultimoTempo) { tv.ultimoTempo = video.currentTime; tv.ultimoAvanco = Date.now(); }
   });
@@ -2687,6 +2764,48 @@ var qrcode = function() {
     if (video.paused && video.readyState >= 2) reproduzir();
     else falhaDeReproducao('travou');
   }, 10000);
+
+  // ---------- acabamento: fundo da vinheta, relógio e faixa "Agora" ----------
+  var faixaTimer = null;
+  function urlMiniatura(id) { return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w1280'; }
+  function duracaoTexto(s) {
+    s = Math.round(Number(s) || 0);
+    if (!s) return '';
+    var m = Math.floor(s / 60), r = s % 60;
+    return m ? (r ? m + ' min ' + r + ' s' : m + ' min') : r + ' s';
+  }
+  function fundoVinheta(item) {
+    var f = $('#vin-fundo');
+    f.classList.remove('pronta');
+    f.onload = function () { f.classList.add('pronta'); };
+    f.onerror = function () { f.removeAttribute('src'); };
+    f.src = urlMiniatura(item.id);
+  }
+  function relogioTV() {
+    $('#vin-hora').textContent = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+  function mostrarFaixaAgora(item) {
+    if (!item) return;
+    $('#fa-titulo').textContent = item.titulo;
+    $('#fa-serie').textContent = item.serie || '';
+    clearTimeout(faixaTimer);
+    faixaAgora.classList.add('ativa');
+    faixaTimer = setTimeout(esconderFaixaAgora, 7000);
+  }
+  var avisoSomTimer = null;
+  function mostrarAvisoSom() {
+    $('#aviso-som').classList.add('ativo');
+    clearTimeout(avisoSomTimer);
+    avisoSomTimer = setTimeout(esconderAvisoSom, 12000);
+  }
+  function esconderAvisoSom() {
+    clearTimeout(avisoSomTimer);
+    $('#aviso-som').classList.remove('ativo');
+  }
+  function esconderFaixaAgora() {
+    clearTimeout(faixaTimer);
+    faixaAgora.classList.remove('ativa');
+  }
 
   // ---------- notícias ----------
   var qrCache = {};
@@ -2718,9 +2837,9 @@ var qrcode = function() {
   }
 
   // as próximas do rodízio: cada intervalo continua de onde o anterior parou
-  function proximasNoticias() {
+  function proximasNoticias(qtdMinima) {
     var lista = (prog.noticias || []).filter(function (n) { return n.ativo !== false; });
-    var qtd = Number(prog.config.noticiasQtd) || 0;
+    var qtd = Math.max(Number(prog.config.noticiasQtd) || 0, qtdMinima || 0);
     if (!lista.length || qtd < 1) return [];
     var lote = [];
     for (var k = 0; k < Math.min(qtd, lista.length); k++) lote.push(lista[(notIdx + k) % lista.length]);
@@ -2757,6 +2876,13 @@ var qrcode = function() {
     } else {
       img.removeAttribute('src');
     }
+    var segmentos = el.querySelector('.not-segmentos');
+    segmentos.innerHTML = '';
+    for (var k = 1; k <= total; k++) {
+      var sp = document.createElement('span');
+      if (k < pos) sp.className = 'cheio'; else if (k === pos) sp.className = 'atual';
+      segmentos.appendChild(sp);
+    }
     el.querySelector('.not-rotulo').textContent = total > 1 ? 'Notícia ' + pos + ' de ' + total : 'Notícia';
     el.querySelector('.not-fonte').textContent = n.fonte || '';
     el.querySelector('.not-data').textContent = n.data ? dataPorExtenso(n.data) : '';
@@ -2772,6 +2898,8 @@ var qrcode = function() {
   function mostrarNoticias(lote, depois) {
     clearTimeout(tv.timer);
     video.pause();
+    video.classList.remove('visivel');
+    esconderFaixaAgora();
     esconder(vinheta); esconder(aviso); esconder(agenda);
     var i = 0;
     (function passo() {
@@ -2848,6 +2976,7 @@ var qrcode = function() {
       baixando: baixa.atual || '',
       pct: baixa.pct,
       falhas: Object.keys(tv.falhas).filter(falhou).join(','),
+      motivos: JSON.stringify(Object.keys(tv.falhas).filter(falhou).reduce(function (m, id) { m[id] = String(tv.motivos[id] || '').slice(0, 160); return m; }, {})).slice(0, 900),
       aviso: avisos.join(' '),
       tela: Math.round(screen.width * proporcao) + 'x' + Math.round(screen.height * proporcao)
     };
@@ -2907,7 +3036,10 @@ var qrcode = function() {
       .then(function () { baixa.prontos[v.id] = true; })
       .catch(function (e) {
         if (e && (e.name === 'QuotaExceededError' || /quota/i.test(e.message || ''))) baixa.semEspaco = true;
-        else baixa.erros[v.id] = Date.now() + 10 * 60000;
+        else {
+          baixa.erros[v.id] = Date.now() + 10 * 60000;
+          baixa.motivos[v.id] = String((e && e.message) || e);
+        }
       })
       .then(function () {
         baixa.ocupado = false;
@@ -2919,7 +3051,14 @@ var qrcode = function() {
 
   function baixar(v) {
     return fetch(urlDrive(v.id)).then(function (resp) {
-      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      if (!resp.ok) {
+        // guarda a explicação do Drive (por exemplo, arquivo sem compartilhamento por link)
+        return resp.text().catch(function () { return ''; }).then(function (t) {
+          var detalhe = '';
+          try { var j = JSON.parse(t); detalhe = (j.error && j.error.message) || ''; } catch (e) { /* resposta sem JSON */ }
+          throw new Error('HTTP ' + resp.status + (detalhe ? ': ' + detalhe : ''));
+        });
+      }
       var total = Number(resp.headers.get('Content-Length')) || v.tamanho || 0;
       var copia = resp;
       if (resp.body && typeof TransformStream === 'function') {
@@ -2941,6 +3080,7 @@ var qrcode = function() {
     var el = document.documentElement;
     if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(function () {});
     if (prog.config.som && video.muted && tv.fase === 'video') { video.muted = false; tv.avisoSom = false; }
+    esconderAvisoSom();
   }
   document.addEventListener('keydown', aoInteragir);
   document.addEventListener('click', aoInteragir);
